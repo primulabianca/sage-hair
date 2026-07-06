@@ -188,7 +188,28 @@ textarea:focus, input[type="number"]:focus, input[type="text"]:focus { outline: 
 .measure-tip {
   background: var(--beige-soft); border-radius: 12px; padding: 10px 12px;
   font-size: .82rem; color: var(--brown); line-height: 1.5; margin-top: 10px;
+  display: flex; gap: 10px; align-items: flex-start;
 }
+.measure-tip .tip-icon svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+/* sotto-dettagli impacco */
+.optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.label-icon svg { width: 17px; height: 17px; vertical-align: -3px; margin-right: 5px; }
+.ing-row { display: flex; gap: 8px; align-items: center; }
+.ing-row input { flex: 1; }
+.ing-row .pill-btn { flex-shrink: 0; padding: 10px 16px; }
+.ing-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ing-chip {
+  background: var(--sage-soft); color: var(--sage-dark); border-radius: 999px;
+  padding: 4px 11px; font-size: .82rem; display: inline-flex; align-items: center; gap: 6px;
+}
+.ing-chip button { border: none; background: none; color: var(--sage-dark); cursor: pointer; font-size: .78rem; padding: 0; line-height: 1; }
+.entry-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 3px 0 2px; }
+.entry-badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: .75rem;
+  color: var(--brown); background: var(--beige-soft); border-radius: 999px; padding: 3px 9px;
+}
+.entry-badge svg { width: 15px; height: 15px; }
 
 .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .photo-slot { position: relative; width: 76px; height: 76px; }

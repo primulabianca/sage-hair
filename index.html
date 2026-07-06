@@ -114,10 +114,22 @@
         <button type="button" id="measPlus" class="stepper-btn" aria-label="Aumenta">+</button>
       </div>
       <input type="range" id="measSlider" min="10" max="150" step="0.5" aria-label="Selettore misura">
-      <p id="measureTip" class="measure-tip"></p>
+    </div>
+    <div id="impaccoField" class="hidden">
+      <label class="field-label"><span class="label-icon" id="phaseLabelIcon"></span>Fase del cronoprogramma <span class="optional">· facoltativa</span></label>
+      <div id="phasePicker" class="type-picker"></div>
+      <label class="field-label">Hair oiling <span class="optional">· facoltativo</span></label>
+      <div id="oilingPicker" class="type-picker"></div>
+      <label class="field-label" for="ingredientInput">Ingredienti <span class="optional">· facoltativi</span></label>
+      <div class="ing-row">
+        <input type="text" id="ingredientInput" placeholder="es. miele" autocapitalize="none">
+        <button type="button" id="addIngredientBtn" class="pill-btn">Aggiungi</button>
+      </div>
+      <div id="ingredientChips" class="ing-chips"></div>
     </div>
     <label class="field-label" for="notesInput">Note</label>
-    <textarea id="notesInput" rows="6" placeholder="Descrivi l'impacco, gli ingredienti, la durata, come sono i capelli oggi…"></textarea>
+    <textarea id="notesInput" rows="6" placeholder="Racconta: durata, sensazioni, come sono i capelli oggi…"></textarea>
+    <p id="entryTip" class="measure-tip hidden"></p>
     <label class="field-label">Foto (max 5)</label>
     <div id="photoGrid" class="photo-grid"></div>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>

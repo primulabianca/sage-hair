@@ -87,6 +87,52 @@ const ICONS = {
     <path d="M19.5 4.5C12 4.5 5.5 8 5 16.5c0 0 0 3 .5 3s.7-2.4 1.5-2.5c7.5-1 12.5-5.5 12.5-12.5z" fill="#8fa387" stroke="#6b8063" stroke-width="1.2"/>
     <path d="M7.5 16.5C10 12 13.5 9 17.5 7" stroke="#f6f1e9" stroke-width="1.2" fill="none" stroke-linecap="round"/>
   </svg>`,
+
+  // ---- icone di servizio e sotto-dettagli dell'impacco ----
+  // lampadina (consigli)
+  lampadina: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2.8a6.2 6.2 0 0 1 3.5 11.3c-.7.5-1.1 1.2-1.1 2.1H9.6c0-.9-.4-1.6-1.1-2.1A6.2 6.2 0 0 1 12 2.8z" fill="#f4d06f" stroke="#8a6b1f" stroke-width="1.3"/>
+    <path d="M9.9 18.4h4.2M10.4 20.4h3.2" stroke="#8a6b1f" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`,
+  // bersaglio (fase del cronoprogramma)
+  bersaglio: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="8.6" fill="#f6f1e9" stroke="#b0563e" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="5.3" fill="none" stroke="#b0563e" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="2.2" fill="#b0563e"/>
+  </svg>`,
+  // olive (hair oiling)
+  oliva: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10.5 6.5C13 3.5 16.5 3 19.5 4.5c-1.5 3-5 4-8 3z" fill="#8fa387" stroke="#6b8063" stroke-width="1.1"/>
+    <ellipse cx="9" cy="14.5" rx="4.8" ry="5.6" fill="#7f9457" stroke="#55663a" stroke-width="1.2"/>
+    <ellipse cx="16.3" cy="13.8" rx="3.7" ry="4.4" fill="#a5b671" stroke="#55663a" stroke-width="1.2"/>
+    <circle cx="7.4" cy="12.4" r="1" fill="#c4d19a"/>
+  </svg>`,
+  // vasetto di miele (fase idratante)
+  miele: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <rect x="7.2" y="3.6" width="9.6" height="2.8" rx="1.2" fill="#c98a33" stroke="#8a5a1f" stroke-width="1.1"/>
+    <path d="M8 6.4h8v1.4c1.7 1 2.9 2.9 2.9 5.1A6.9 6.6 0 0 1 12 19.8a6.9 6.6 0 0 1-6.9-6.9c0-2.2 1.2-4.1 2.9-5.1z" fill="#e0a44b" stroke="#8a5a1f" stroke-width="1.2"/>
+    <path d="M5.6 12.6h12.8" stroke="#fdf6e3" stroke-width="2.4"/>
+  </svg>`,
+  // avocado (fase nutriente)
+  avocado: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2.8c1.7 0 2.5 1.7 3.1 3.7.8 2.6 3.1 3.7 3.1 6.5a6.2 6.2 0 0 1-12.4 0c0-2.8 2.3-3.9 3.1-6.5.6-2 1.4-3.7 3.1-3.7z" fill="#5d7a44" stroke="#3f5430" stroke-width="1.2"/>
+    <ellipse cx="12" cy="13.2" rx="4.2" ry="5" fill="#cdd98f"/>
+    <circle cx="12" cy="14.4" r="2.3" fill="#8a5a33" stroke="#6f4526" stroke-width="1"/>
+  </svg>`,
+  // pesciolino (fase proteinizzante)
+  pesce: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3.2 12l4.6-3.4v6.8z" fill="#6d94ad" stroke="#46657a" stroke-width="1.1" stroke-linejoin="round"/>
+    <ellipse cx="14.2" cy="12" rx="7" ry="4.7" fill="#9fc0d3" stroke="#46657a" stroke-width="1.2"/>
+    <path d="M13.2 8.2c1.6 2.2 1.6 5.4 0 7.6" stroke="#46657a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="17.8" cy="10.8" r="1" fill="#2f4552"/>
+  </svg>`,
+};
+
+// fasi del cronoprogramma capillare (sotto-dettaglio dell'impacco)
+const PHASES = {
+  idratante:      { label: 'Idratante',      icon: 'miele' },
+  proteinizzante: { label: 'Proteinizzante', icon: 'pesce' },
+  nutriente:      { label: 'Nutriente',      icon: 'avocado' },
 };
 
 // ---------- Stato ----------
@@ -101,6 +147,7 @@ const state = {
   editing: null,           // voce in modifica (o null se nuova)
   editorType: 'impacco',
   photoSlots: [],          // [{blob, url}] foto correnti nell'editor
+  impacco: { phase: null, oiling: false, ingredients: [] }, // sotto-dettagli impacco nell'editor
 };
 
 let db;
@@ -228,11 +275,20 @@ function renderCalendar() {
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (key === tKey ? ' today' : '');
     const dayEntries = byDate[key] || [];
-    const shown = dayEntries.slice(0, 4);
+    // ogni voce porta la sua icona; l'impacco aggiunge quelle dei sotto-dettagli
+    const icons = [];
+    for (const e of dayEntries) {
+      icons.push(ICONS[e.type] || '');
+      if (e.type === 'impacco') {
+        if (e.phase && PHASES[e.phase]) icons.push(ICONS[PHASES[e.phase].icon]);
+        if (e.oiling) icons.push(ICONS.oliva);
+      }
+    }
+    const shown = icons.slice(0, 4);
     cell.innerHTML =
       `<span class="day-num">${d}</span>` +
-      `<span class="day-icons">${shown.map((e) => ICONS[e.type] || '').join('')}</span>` +
-      (dayEntries.length > 4 ? `<span class="day-more">+${dayEntries.length - 4}</span>` : '');
+      `<span class="day-icons">${shown.join('')}</span>` +
+      (icons.length > 4 ? `<span class="day-more">+${icons.length - 4}</span>` : '');
     cell.addEventListener('click', () => openDayModal(key));
     grid.appendChild(cell);
   }
@@ -271,12 +327,21 @@ async function renderDayEntries() {
     let lengthHtml = '';
     if (e.type === 'lunghezza' && e.lengthCm != null) lengthHtml = `<div class="entry-length">${fmtLen(e.lengthCm)}</div>`;
     if (e.type === 'taglio' && e.cutCm != null) lengthHtml = `<div class="entry-length">−${fmtLen(e.cutCm)}</div>`;
+    const badges = [];
+    if (e.type === 'impacco') {
+      if (e.phase && PHASES[e.phase]) badges.push(`<span class="entry-badge">${ICONS[PHASES[e.phase].icon]} ${PHASES[e.phase].label}</span>`);
+      if (e.oiling) badges.push(`<span class="entry-badge">${ICONS.oliva} Hair oiling</span>`);
+    }
+    const ingredientsHtml = e.ingredients && e.ingredients.length
+      ? `<div class="ing-chips">${e.ingredients.map((i) => `<span class="ing-chip">${escapeHtml(i)}</span>`).join('')}</div>` : '';
     card.innerHTML =
       `<span class="entry-icon">${ICONS[e.type] || ''}</span>
        <div class="entry-body">
          <div class="entry-type-label">${TYPES[e.type]?.label || e.type}</div>
+         ${badges.length ? `<div class="entry-badges">${badges.join('')}</div>` : ''}
          ${lengthHtml}
          ${e.notes ? `<div class="entry-notes">${escapeHtml(e.notes)}</div>` : ''}
+         ${ingredientsHtml}
          <div class="entry-thumbs"></div>
        </div>`;
     card.addEventListener('click', () => openEditor(e));
@@ -299,11 +364,11 @@ async function renderDayEntries() {
 const MEASURE_CONF = {
   lunghezza: {
     label: 'Lunghezza misurata', min: 10, max: 150, fallback: 60,
-    tip: '📏 <strong>Come si misura?</strong> Appoggia l\'inizio del metro all\'attaccatura dei capelli sulla fronte, poi segui la chioma fino al punto della schiena dove arriva la ciocca più lunga. Puoi misurare da bagnati o da asciutti, come preferisci: l\'importante è farlo sempre nello stesso modo, così le statistiche saranno più attendibili. (Per orientarti: in genere si parte da 45–90 cm.)',
+    tip: '<strong>Come si misura?</strong> Appoggia l\'inizio del metro all\'attaccatura dei capelli sulla fronte, poi segui la chioma fino al punto della schiena dove arriva la ciocca più lunga. Puoi misurare da bagnati o da asciutti, come preferisci: l\'importante è farlo sempre nello stesso modo, così le statistiche saranno più attendibili.',
   },
   taglio: {
     label: 'Quanto hai tagliato', min: 0.5, max: 30, fallback: 2,
-    tip: '✂️ In genere una spuntatina è 1–3 cm, un taglio deciso arriva a 10–15. Se non ricordi al centimetro, va benissimo una stima.',
+    tip: 'In genere una spuntatina è 1–3 cm, un taglio deciso arriva a 10–15. Se non ricordi al centimetro, va benissimo una stima.',
   },
 };
 
@@ -316,6 +381,11 @@ function lastMeasuredCm() {
 function openEditor(entry = null) {
   state.editing = entry;
   state.editorType = entry ? entry.type : 'shampoo';
+  state.impacco = {
+    phase: entry?.phase || null,
+    oiling: !!entry?.oiling,
+    ingredients: [...(entry?.ingredients || [])],
+  };
   state.photoSlots.forEach((s) => URL.revokeObjectURL(s.url));
   state.photoSlots = [];
 
@@ -354,9 +424,17 @@ function renderTypePicker() {
   updateMeasureField();
 }
 
-// mostra/configura il contatore per i tipi che hanno una misura
+// mostra/configura i campi specifici del tipo scelto (contatore, impacco, consiglio)
 function updateMeasureField() {
   const conf = MEASURE_CONF[state.editorType];
+  renderImpaccoField();
+  const tipEl = $('#entryTip');
+  if (conf && conf.tip) {
+    tipEl.innerHTML = `<span class="tip-icon">${ICONS.lampadina}</span><span>${conf.tip}</span>`;
+    tipEl.classList.remove('hidden');
+  } else {
+    tipEl.classList.add('hidden');
+  }
   $('#measureField').classList.toggle('hidden', !conf);
   if (!conf) return;
   $('#measureLabel').textContent = conf.label;
@@ -386,6 +464,69 @@ function nudgeMeasure(deltaCm) {
   if (!conf) return;
   state.measureCm = Math.min(conf.max, Math.max(conf.min, Math.round((state.measureCm + deltaCm) * 10) / 10));
   renderMeasureValue();
+}
+
+// ---- sotto-dettagli dell'impacco: fase, hair oiling, ingredienti ----
+function renderImpaccoField() {
+  const on = state.editorType === 'impacco';
+  $('#impaccoField').classList.toggle('hidden', !on);
+  if (!on) return;
+  $('#phaseLabelIcon').innerHTML = ICONS.bersaglio;
+
+  const picker = $('#phasePicker');
+  picker.innerHTML = '';
+  for (const [k, p] of Object.entries(PHASES)) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'type-chip' + (state.impacco.phase === k ? ' selected' : '');
+    chip.innerHTML = `${ICONS[p.icon]} ${p.label}`;
+    chip.addEventListener('click', () => {
+      state.impacco.phase = state.impacco.phase === k ? null : k; // ritocca per deselezionare
+      renderImpaccoField();
+    });
+    picker.appendChild(chip);
+  }
+
+  const oil = $('#oilingPicker');
+  oil.innerHTML = '';
+  const oilChip = document.createElement('button');
+  oilChip.type = 'button';
+  oilChip.className = 'type-chip' + (state.impacco.oiling ? ' selected' : '');
+  oilChip.innerHTML = `${ICONS.oliva} Era un hair oiling`;
+  oilChip.addEventListener('click', () => {
+    state.impacco.oiling = !state.impacco.oiling;
+    renderImpaccoField();
+  });
+  oil.appendChild(oilChip);
+
+  renderIngredientChips();
+}
+
+function renderIngredientChips() {
+  const box = $('#ingredientChips');
+  box.innerHTML = '';
+  state.impacco.ingredients.forEach((ing, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'ing-chip';
+    chip.innerHTML = `${escapeHtml(ing)} <button type="button" aria-label="Rimuovi ${escapeHtml(ing)}">✕</button>`;
+    chip.querySelector('button').addEventListener('click', () => {
+      state.impacco.ingredients.splice(i, 1);
+      renderIngredientChips();
+    });
+    box.appendChild(chip);
+  });
+}
+
+function addIngredient() {
+  const input = $('#ingredientInput');
+  const v = input.value.trim();
+  if (!v) return;
+  if (!state.impacco.ingredients.some((x) => x.toLowerCase() === v.toLowerCase())) {
+    state.impacco.ingredients.push(v);
+  }
+  input.value = '';
+  input.focus();
+  renderIngredientChips();
 }
 
 function renderPhotoGrid() {
@@ -449,9 +590,15 @@ async function saveEntry() {
   const notes = $('#notesInput').value.trim();
   const lengthCm = type === 'lunghezza' ? state.measureCm : null;
   const cutCm = type === 'taglio' ? state.measureCm : null;
+  const isImp = type === 'impacco';
+  const extra = {
+    phase: isImp ? state.impacco.phase : null,
+    oiling: isImp ? state.impacco.oiling : false,
+    ingredients: isImp ? state.impacco.ingredients : [],
+  };
   const entry = state.editing
-    ? { ...state.editing, type, notes, lengthCm, cutCm, updatedAt: Date.now() }
-    : { id: uuid(), date: state.openDate, type, notes, lengthCm, cutCm, createdAt: Date.now(), updatedAt: Date.now() };
+    ? { ...state.editing, type, notes, lengthCm, cutCm, ...extra, updatedAt: Date.now() }
+    : { id: uuid(), date: state.openDate, type, notes, lengthCm, cutCm, ...extra, createdAt: Date.now(), updatedAt: Date.now() };
 
   await putEntry(entry);
   await deletePhotosFor(entry.id);
@@ -916,6 +1063,10 @@ async function init() {
 
   $('#addEntryBtn').addEventListener('click', () => openEditor(null));
   $('#saveEntryBtn').addEventListener('click', saveEntry);
+  $('#addIngredientBtn').addEventListener('click', addIngredient);
+  $('#ingredientInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addIngredient(); }
+  });
   $('#measMinus').addEventListener('click', () => nudgeMeasure(-0.5));
   $('#measPlus').addEventListener('click', () => nudgeMeasure(0.5));
   $('#measSlider').addEventListener('input', () => {
