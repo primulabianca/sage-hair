@@ -119,6 +119,11 @@ const ICONS = {
     <ellipse cx="12" cy="13.2" rx="4.2" ry="5" fill="#cdd98f"/>
     <circle cx="12" cy="14.4" r="2.3" fill="#8a5a33" stroke="#6f4526" stroke-width="1"/>
   </svg>`,
+  // scudo (termoprotettore)
+  scudo: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3l7 2.6v5.6c0 4.6-3 8-7 9.8-4-1.8-7-5.2-7-9.8V5.6z" fill="#8fa387" stroke="#6b8063" stroke-width="1.3"/>
+    <path d="M9 11.8l2.2 2.2 4-4.4" stroke="#fdfcfa" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   // pesciolino (fase proteinizzante)
   pesce: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M3.2 12l4.6-3.4v6.8z" fill="#6d94ad" stroke="#46657a" stroke-width="1.1" stroke-linejoin="round"/>
@@ -148,6 +153,8 @@ const state = {
   editorType: 'impacco',
   photoSlots: [],          // [{blob, url}] foto correnti nell'editor
   impacco: { phase: null, oiling: false, ingredients: [] }, // sotto-dettagli impacco nell'editor
+  formula: [],             // formula per colore/schiaritura nell'editor
+  thermo: false,           // termoprotettore per phon/piastra nell'editor
 };
 
 let db;
@@ -209,6 +216,7 @@ async function addTombstone(id) {
 async function reloadEntries() {
   state.entries = await getAllEntries();
   state.entries.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+  updateCurrentLength();
 }
 
 // ---------- Utilità ----------
@@ -332,8 +340,10 @@ async function renderDayEntries() {
       if (e.phase && PHASES[e.phase]) badges.push(`<span class="entry-badge">${ICONS[PHASES[e.phase].icon]} ${PHASES[e.phase].label}</span>`);
       if (e.oiling) badges.push(`<span class="entry-badge">${ICONS.oliva} Hair oiling</span>`);
     }
-    const ingredientsHtml = e.ingredients && e.ingredients.length
-      ? `<div class="ing-chips">${e.ingredients.map((i) => `<span class="ing-chip">${escapeHtml(i)}</span>`).join('')}</div>` : '';
+    if (e.type === 'calore' && e.thermo) badges.push(`<span class="entry-badge">${ICONS.scudo} Termoprotettore</span>`);
+    const listChips = [...(e.ingredients || []), ...(e.formula || [])];
+    const ingredientsHtml = listChips.length
+      ? `<div class="ing-chips">${listChips.map((i) => `<span class="ing-chip">${escapeHtml(i)}</span>`).join('')}</div>` : '';
     card.innerHTML =
       `<span class="entry-icon">${ICONS[e.type] || ''}</span>
        <div class="entry-body">
@@ -368,24 +378,44 @@ const MEASURE_CONF = {
   },
   taglio: {
     label: 'Quanto hai tagliato', min: 0.5, max: 30, fallback: 2,
-    tip: 'In genere una spuntatina è 1–3 cm, un taglio deciso arriva a 10–15. Se non ricordi al centimetro, va benissimo una stima.',
+    tip: 'In genere una spuntatina è 1–2 cm, un taglio deciso arriva a 10–15. Se non ricordi al centimetro, va benissimo una stima.',
   },
 };
 
-function lastMeasuredCm() {
-  const m = state.entries.filter((e) => e.type === 'lunghezza' && e.lengthCm != null)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  return m.length ? m[0].lengthCm : null;
+// lunghezza corrente: ultima misurazione meno i tagli fatti dopo di essa
+function currentLengthCm() {
+  const ms = state.entries.filter((e) => e.type === 'lunghezza' && e.lengthCm != null)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
+  if (!ms.length) return null;
+  const last = ms[ms.length - 1];
+  let cur = last.lengthCm;
+  for (const e of state.entries) {
+    if (e.type !== 'taglio' || e.cutCm == null) continue;
+    const after = e.date > last.date || (e.date === last.date && (e.createdAt || 0) > (last.createdAt || 0));
+    if (after) cur -= e.cutCm;
+  }
+  return Math.max(0, Math.round(cur * 10) / 10);
 }
 
-function openEditor(entry = null) {
+// la spilletta accanto allo switch cm/in: toccala per registrare una nuova misura
+function updateCurrentLength() {
+  const btn = $('#currentLen');
+  const cur = currentLengthCm();
+  if (cur == null) { btn.classList.add('hidden'); return; }
+  btn.innerHTML = `${ICONS.lunghezza}<span>${fmtLen(cur)}</span>`;
+  btn.classList.remove('hidden');
+}
+
+function openEditor(entry = null, presetType = null) {
   state.editing = entry;
-  state.editorType = entry ? entry.type : 'shampoo';
+  state.editorType = entry ? entry.type : (presetType || 'shampoo');
   state.impacco = {
     phase: entry?.phase || null,
     oiling: !!entry?.oiling,
     ingredients: [...(entry?.ingredients || [])],
   };
+  state.formula = [...(entry?.formula || [])];
+  state.thermo = !!entry?.thermo;
   state.photoSlots.forEach((s) => URL.revokeObjectURL(s.url));
   state.photoSlots = [];
 
@@ -438,7 +468,6 @@ function updateMeasureField() {
   $('#measureField').classList.toggle('hidden', !conf);
   if (!conf) return;
   $('#measureLabel').textContent = conf.label;
-  $('#measureTip').innerHTML = conf.tip;
   const slider = $('#measSlider');
   slider.min = conf.min;
   slider.max = conf.max;
@@ -446,7 +475,7 @@ function updateMeasureField() {
   if (e && e.type === state.editorType) {
     state.measureCm = (state.editorType === 'lunghezza' ? e.lengthCm : e.cutCm) ?? conf.fallback;
   } else if (state.editorType === 'lunghezza') {
-    state.measureCm = lastMeasuredCm() ?? conf.fallback; // riparti dall'ultima misura
+    state.measureCm = currentLengthCm() ?? conf.fallback; // riparti dalla lunghezza corrente
   } else {
     state.measureCm = conf.fallback;
   }
@@ -466,12 +495,40 @@ function nudgeMeasure(deltaCm) {
   renderMeasureValue();
 }
 
-// ---- sotto-dettagli dell'impacco: fase, hair oiling, ingredienti ----
+// ---- campi specifici per tipo: impacco, colore/schiaritura, phon/piastra ----
+const FORMULA_PLACEHOLDER = { colore: 'es. 7.35 per 10 vol', schiaritura: 'es. 20 vol · 6%' };
+
 function renderImpaccoField() {
-  const on = state.editorType === 'impacco';
-  $('#impaccoField').classList.toggle('hidden', !on);
-  if (!on) return;
+  const isImp = state.editorType === 'impacco';
+  const hasFormula = state.editorType === 'colore' || state.editorType === 'schiaritura';
+  const isHeat = state.editorType === 'calore';
+  $('#impaccoField').classList.toggle('hidden', !isImp);
+  $('#phaseField').classList.toggle('hidden', !isImp);
+  $('#formulaField').classList.toggle('hidden', !hasFormula);
+  $('#thermoField').classList.toggle('hidden', !isHeat);
+
+  if (hasFormula) {
+    $('#formulaInput').placeholder = FORMULA_PLACEHOLDER[state.editorType];
+    renderFormulaChips();
+  }
+
+  if (isHeat) {
+    const box = $('#thermoPicker');
+    box.innerHTML = '';
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'type-chip' + (state.thermo ? ' selected' : '');
+    chip.innerHTML = `${ICONS.scudo} Ho usato un termoprotettore`;
+    chip.addEventListener('click', () => {
+      state.thermo = !state.thermo;
+      renderImpaccoField();
+    });
+    box.appendChild(chip);
+  }
+
+  if (!isImp) return;
   $('#phaseLabelIcon').innerHTML = ICONS.bersaglio;
+  $('#cronoTip').innerHTML = `<span class="tip-icon">${ICONS.lampadina}</span><span>Il <strong>cronoprogramma capillare</strong> è la routine che alterna impacchi idratanti, nutrienti e proteici per mantenere i capelli in equilibrio. L'hair oiling (bagno d'olio) è un rituale a sé.</span>`;
 
   const picker = $('#phasePicker');
   picker.innerHTML = '';
@@ -482,6 +539,7 @@ function renderImpaccoField() {
     chip.innerHTML = `${ICONS[p.icon]} ${p.label}`;
     chip.addEventListener('click', () => {
       state.impacco.phase = state.impacco.phase === k ? null : k; // ritocca per deselezionare
+      if (state.impacco.phase) state.impacco.oiling = false;      // fase e oiling si escludono
       renderImpaccoField();
     });
     picker.appendChild(chip);
@@ -492,14 +550,40 @@ function renderImpaccoField() {
   const oilChip = document.createElement('button');
   oilChip.type = 'button';
   oilChip.className = 'type-chip' + (state.impacco.oiling ? ' selected' : '');
-  oilChip.innerHTML = `${ICONS.oliva} Era un hair oiling`;
+  oilChip.innerHTML = `${ICONS.oliva} Hair oiling`;
   oilChip.addEventListener('click', () => {
     state.impacco.oiling = !state.impacco.oiling;
+    if (state.impacco.oiling) state.impacco.phase = null; // l'oiling azzera la fase
     renderImpaccoField();
   });
   oil.appendChild(oilChip);
 
   renderIngredientChips();
+}
+
+function renderFormulaChips() {
+  const box = $('#formulaChips');
+  box.innerHTML = '';
+  state.formula.forEach((f, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'ing-chip';
+    chip.innerHTML = `${escapeHtml(f)} <button type="button" aria-label="Rimuovi ${escapeHtml(f)}">✕</button>`;
+    chip.querySelector('button').addEventListener('click', () => {
+      state.formula.splice(i, 1);
+      renderFormulaChips();
+    });
+    box.appendChild(chip);
+  });
+}
+
+function addFormula() {
+  const input = $('#formulaInput');
+  const v = input.value.trim();
+  if (!v) return;
+  if (!state.formula.some((x) => x.toLowerCase() === v.toLowerCase())) state.formula.push(v);
+  input.value = '';
+  input.focus();
+  renderFormulaChips();
 }
 
 function renderIngredientChips() {
@@ -595,6 +679,8 @@ async function saveEntry() {
     phase: isImp ? state.impacco.phase : null,
     oiling: isImp ? state.impacco.oiling : false,
     ingredients: isImp ? state.impacco.ingredients : [],
+    formula: (type === 'colore' || type === 'schiaritura') ? state.formula : [],
+    thermo: type === 'calore' ? state.thermo : false,
   };
   const entry = state.editing
     ? { ...state.editing, type, notes, lengthCm, cutCm, ...extra, updatedAt: Date.now() }
@@ -1019,6 +1105,7 @@ function toggleUnit() {
   state.unit = state.unit === 'cm' ? 'in' : 'cm';
   localStorage.setItem('chioma-unit', state.unit);
   $('#unitToggle').textContent = state.unit;
+  updateCurrentLength();
   if (!$('#editorModal').classList.contains('hidden')) renderMeasureValue();
   if (state.view === 'stats') renderStats();
   if (state.openDate && !$('#dayModal').classList.contains('hidden')) renderDayEntries();
@@ -1066,6 +1153,14 @@ async function init() {
   $('#addIngredientBtn').addEventListener('click', addIngredient);
   $('#ingredientInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addIngredient(); }
+  });
+  $('#addFormulaBtn').addEventListener('click', addFormula);
+  $('#formulaInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addFormula(); }
+  });
+  $('#currentLen').addEventListener('click', () => {
+    state.openDate = todayKey();
+    openEditor(null, 'lunghezza');
   });
   $('#measMinus').addEventListener('click', () => nudgeMeasure(-0.5));
   $('#measPlus').addEventListener('click', () => nudgeMeasure(0.5));
