@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#8fa387">
+<title>Sage Hair · Diario dei capelli</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="#8fa387"/>
+      <path d="M15 12c-3 8-2 18 2 24" fill="none" stroke="#fdfcfa" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M24 10c-4 9-3 20 1 27" fill="none" stroke="#f6f1e9" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M33 12c-2 8-4 18-9 25" fill="none" stroke="#ede5d8" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>Sage Hair</h1>
+      <p class="tagline">diario dei capelli</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button id="unitToggle" class="unit-toggle" title="Unità di misura">cm</button>
+    <button id="settingsBtn" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">
+      <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-view="calendar" role="tab">Calendario</button>
+  <button class="tab" data-view="stats" role="tab">Statistiche</button>
+  <button class="tab" data-view="timer" role="tab">Timer</button>
+</nav>
+
+<main>
+  <!-- ============ CALENDARIO ============ -->
+  <section id="view-calendar" class="view active">
+    <div class="month-nav">
+      <button id="prevMonth" class="icon-btn" aria-label="Mese precedente">‹</button>
+      <h2 id="monthLabel"></h2>
+      <button id="nextMonth" class="icon-btn" aria-label="Mese successivo">›</button>
+      <button id="todayBtn" class="pill-btn">Oggi</button>
+    </div>
+    <div class="weekdays">
+      <span>Lun</span><span>Mar</span><span>Mer</span><span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+    <div id="legend" class="legend"></div>
+  </section>
+
+  <!-- ============ STATISTICHE ============ -->
+  <section id="view-stats" class="view">
+    <div id="statsContent"></div>
+  </section>
+
+  <!-- ============ TIMER ============ -->
+  <section id="view-timer" class="view">
+    <div class="timer-card">
+      <p class="timer-hint">Per cronometrare l'impacco 🌿</p>
+      <div id="timerDisplay" class="timer-display">20:00</div>
+      <div class="timer-presets">
+        <button class="pill-btn preset" data-min="10">10 min</button>
+        <button class="pill-btn preset" data-min="20">20 min</button>
+        <button class="pill-btn preset" data-min="30">30 min</button>
+        <button class="pill-btn preset" data-min="45">45 min</button>
+        <button class="pill-btn preset" data-min="60">1 ora</button>
+      </div>
+      <div class="timer-custom">
+        <label for="customMin">Minuti:</label>
+        <input type="number" id="customMin" min="1" max="600" value="20">
+      </div>
+      <div class="timer-controls">
+        <button id="timerStart" class="big-btn primary">Avvia</button>
+        <button id="timerReset" class="big-btn ghost">Azzera</button>
+      </div>
+      <p id="timerDone" class="timer-done hidden">✨ Tempo scaduto! Risciacqua pure.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ============ MODAL: GIORNO ============ -->
+<div id="dayModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="dayModalTitle"></h3>
+      <button class="icon-btn close-modal" data-close="dayModal" aria-label="Chiudi">✕</button>
+    </div>
+    <div id="dayEntries" class="day-entries"></div>
+    <button id="addEntryBtn" class="big-btn primary">+ Aggiungi voce</button>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDITOR VOCE ============ -->
+<div id="editorModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="editorTitle">Nuova voce</h3>
+      <button class="icon-btn close-modal" data-close="editorModal" aria-label="Chiudi">✕</button>
+    </div>
+    <label class="field-label">Tipo</label>
+    <div id="typePicker" class="type-picker"></div>
+    <div id="lengthField" class="length-field hidden">
+      <label class="field-label" for="lengthInput">Lunghezza (<span id="lengthUnitLabel">cm</span>)</label>
+      <input type="number" id="lengthInput" step="0.1" min="0" placeholder="es. 42.5">
+    </div>
+    <label class="field-label" for="notesInput">Note</label>
+    <textarea id="notesInput" rows="6" placeholder="Descrivi l'impacco, gli ingredienti, la durata, come sono i capelli oggi…"></textarea>
+    <label class="field-label">Foto (max 5)</label>
+    <div id="photoGrid" class="photo-grid"></div>
+    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <div class="editor-actions">
+      <button id="deleteEntryBtn" class="big-btn danger hidden">Elimina</button>
+      <button id="saveEntryBtn" class="big-btn primary">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: IMPOSTAZIONI ============ -->
+<div id="settingsModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Impostazioni</h3>
+      <button class="icon-btn close-modal" data-close="settingsModal" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="settings-block">
+      <h4>Backup 💾</h4>
+      <p class="muted">Il backup è una copia di sicurezza: un unico file con dentro tutto il tuo diario — note, misurazioni e foto. Ti serve per non perdere nulla e per portare il diario su un altro dispositivo.</p>
+      <details class="help-details">
+        <summary>Come funziona?</summary>
+        <ul>
+          <li><strong>Esporta dati</strong> crea il file di backup e lo salva su questo dispositivo.</li>
+          <li><strong>Condividi backup</strong> (compare solo sul telefono) fa la stessa cosa, ma ti apre subito il menu di condivisione: due tocchi e il file è su Google Drive, in una mail a te stessa o su WhatsApp.</li>
+          <li><strong>Importa dati</strong> legge un file di backup e lo unisce a quello che hai già: non cancella niente, e se una voce esiste in entrambi tiene la versione più recente. Puoi importare lo stesso file due volte senza creare doppioni.</li>
+        </ul>
+        <p>💡 Consiglio: esporta un backup ogni tanto e tienilo in un posto sicuro (per esempio su Drive). Così, anche se perdi il telefono, il tuo diario è salvo.</p>
+      </details>
+      <div class="settings-row">
+        <button id="exportBtn" class="big-btn primary">Esporta dati</button>
+        <button id="shareBtn" class="big-btn primary hidden">Condividi backup</button>
+        <button id="importBtn" class="big-btn ghost">Importa dati</button>
+        <input type="file" id="importInput" accept=".json,application/json" hidden>
+      </div>
+      <p id="backupStatus" class="muted"></p>
+    </div>
+    <div class="settings-block">
+      <h4>Sincronizzazione WiFi 📶</h4>
+      <p class="muted">Il modo più comodo per tenere allineati telefono e computer: quando sono a casa sulla stessa rete WiFi, premi un bottone e i due diari diventano identici, foto comprese. Senza account e senza internet: i dati non escono da casa tua.</p>
+      <details class="help-details">
+        <summary>Come si usa, passo per passo?</summary>
+        <ol>
+          <li>Sul computer, avvia Sage Hair col doppio click su <strong>avvia-sage-hair</strong>: oltre ad aprire l'app, accende un piccolo "punto d'incontro" per i dati.</li>
+          <li>Nella finestra che resta aperta sul computer c'è scritto l'indirizzo da usare dal telefono (qualcosa come <em>http://192.168.1.10:8420</em>). Scrivilo qui sotto — serve solo la prima volta, poi resta memorizzato.</li>
+          <li>Premi <strong>Sincronizza ora</strong>. Fine! Fallo su entrambi i dispositivi quando vuoi allinearli.</li>
+        </ol>
+        <p>Se qualcosa non va, i controlli sono sempre gli stessi: il server sul computer è acceso? Telefono e computer sono sulla stessa WiFi? L'indirizzo scritto sotto è quello mostrato dal server?</p>
+      </details>
+      <label class="field-label" for="syncUrl">Indirizzo del computer</label>
+      <input type="text" id="syncUrl" placeholder="es. http://192.168.1.10:8420" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="settings-row" style="margin-top:10px;">
+        <button id="syncBtn" class="big-btn primary">Sincronizza ora</button>
+      </div>
+      <p id="syncStatus" class="muted"></p>
+    </div>
+    <div class="settings-block">
+      <h4>Info</h4>
+      <p class="muted">Tutti i dati restano sui tuoi dispositivi e sulla tua rete di casa. Nessun account, nessun cloud. 🌱</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LIGHTBOX ============ -->
+<div id="lightbox" class="lightbox hidden">
+  <img id="lightboxImg" alt="Foto">
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

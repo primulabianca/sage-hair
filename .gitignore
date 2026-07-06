@@ -1,0 +1,4 @@
+# dati personali: MAI pubblicarli su GitHub
+sage-hair-data.json
+*.tmp
+.DS_Store

@@ -1,0 +1,16 @@
+{
+  "name": "Sage Hair — Diario dei capelli",
+  "short_name": "Sage Hair",
+  "description": "Tracker per la crescita e la cura naturale dei capelli: calendario, impacchi, misurazioni, foto, statistiche e timer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fdfcfa",
+  "theme_color": "#8fa387",
+  "lang": "it",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
