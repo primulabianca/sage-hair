@@ -201,13 +201,25 @@ textarea:focus, input[type="number"]:focus, input[type="text"]:focus { outline: 
 }
 .measure-tip .tip-icon svg { width: 22px; height: 22px; flex-shrink: 0; }
 
+/* flagghino discreto, in palette */
 .check-row {
-  display: flex; align-items: center; gap: 9px; margin: 12px 2px 2px;
-  font-size: .9rem; color: var(--text); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; margin: 10px 2px 2px;
+  font-size: .84rem; color: var(--brown); cursor: pointer;
 }
 .check-row input[type="checkbox"] {
-  width: 18px; height: 18px; accent-color: var(--sage-dark); cursor: pointer;
+  appearance: none; -webkit-appearance: none; margin: 0; flex-shrink: 0;
+  width: 16px; height: 16px; border: 1.5px solid var(--sage);
+  border-radius: 5px; background: var(--card); cursor: pointer; position: relative;
+  transition: background .15s;
 }
+.check-row input[type="checkbox"]:checked { background: var(--sage); }
+.check-row input[type="checkbox"]:checked::after {
+  content: ''; position: absolute; left: 4.2px; top: 1.2px;
+  width: 4px; height: 8px; border: solid #fff; border-width: 0 1.8px 1.8px 0;
+  transform: rotate(45deg);
+}
+
+.type-chip.disabled { opacity: .4; }
 
 /* sotto-dettagli impacco */
 .optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }

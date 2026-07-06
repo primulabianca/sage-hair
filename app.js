@@ -152,9 +152,10 @@ const state = {
   editing: null,           // voce in modifica (o null se nuova)
   editorType: 'impacco',
   photoSlots: [],          // [{blob, url}] foto correnti nell'editor
-  impacco: { phase: null, oiling: false, ingredients: [] }, // sotto-dettagli impacco nell'editor
+  impacco: { phases: [], oiling: false, ingredients: [] }, // sotto-dettagli impacco nell'editor
   formula: [],             // formula per colore/schiaritura nell'editor
   thermo: false,           // termoprotettore per phon/piastra nell'editor
+  cowash: false,           // co-wash per lo shampoo nell'editor
 };
 
 let db;
@@ -288,7 +289,7 @@ function renderCalendar() {
     for (const e of dayEntries) {
       icons.push(ICONS[e.type] || '');
       if (e.type === 'impacco') {
-        if (e.phase && PHASES[e.phase]) icons.push(ICONS[PHASES[e.phase].icon]);
+        for (const p of getPhases(e)) if (PHASES[p]) icons.push(ICONS[PHASES[p].icon]);
         if (e.oiling) icons.push(ICONS.oliva);
       }
     }
@@ -337,10 +338,13 @@ async function renderDayEntries() {
     if (e.type === 'taglio' && e.cutCm != null) lengthHtml = `<div class="entry-length">−${fmtLen(e.cutCm)}</div>`;
     const badges = [];
     if (e.type === 'impacco') {
-      if (e.phase && PHASES[e.phase]) badges.push(`<span class="entry-badge">${ICONS[PHASES[e.phase].icon]} ${PHASES[e.phase].label}</span>`);
+      for (const p of getPhases(e)) {
+        if (PHASES[p]) badges.push(`<span class="entry-badge">${ICONS[PHASES[p].icon]} ${PHASES[p].label}</span>`);
+      }
       if (e.oiling) badges.push(`<span class="entry-badge">${ICONS.oliva} Hair oiling</span>`);
     }
     if (e.type === 'calore' && e.thermo) badges.push(`<span class="entry-badge">${ICONS.scudo} Termoprotettore</span>`);
+    if (e.type === 'shampoo' && e.cowash) badges.push(`<span class="entry-badge">${ICONS.shampoo} Co-wash</span>`);
     const listChips = [...(e.ingredients || []), ...(e.formula || [])];
     const ingredientsHtml = listChips.length
       ? `<div class="ing-chips">${listChips.map((i) => `<span class="ing-chip">${escapeHtml(i)}</span>`).join('')}</div>` : '';
@@ -410,12 +414,13 @@ function openEditor(entry = null, presetType = null) {
   state.editing = entry;
   state.editorType = entry ? entry.type : (presetType || 'shampoo');
   state.impacco = {
-    phase: entry?.phase || null,
+    phases: entry ? [...getPhases(entry)] : [],
     oiling: !!entry?.oiling,
     ingredients: [...(entry?.ingredients || [])],
   };
   state.formula = [...(entry?.formula || [])];
   state.thermo = !!entry?.thermo;
+  state.cowash = !!entry?.cowash;
   state.photoSlots.forEach((s) => URL.revokeObjectURL(s.url));
   state.photoSlots = [];
 
@@ -499,16 +504,26 @@ function nudgeMeasure(deltaCm) {
 
 // ---- campi specifici per tipo: impacco, colore/schiaritura, phon/piastra ----
 const FORMULA_PLACEHOLDER = { colore: 'es. 7.35 per 10 vol', schiaritura: 'es. 20 vol · 6%' };
-const CRONO_TIP = 'Il <strong>cronoprogramma capillare</strong> è la routine che alterna impacchi idratanti, nutrienti e proteici per mantenere i capelli in equilibrio. L\'hair oiling (bagno d\'olio) è un rituale a sé, che di solito si concentra sulla cute; se preferisci inquadrarlo nel cronoprogramma, l\'olio ricade in genere nella fase nutriente.';
+const CRONO_TIP = 'Il <strong>cronoprogramma capillare</strong> è la routine che alterna impacchi idratanti, nutrienti e proteici per mantenere i capelli in equilibrio.<br><br>'
+  + 'L\'hair oiling, invece, è un rituale a sé, che di solito si concentra soprattutto sulla cute.<br>'
+  + 'Se preferisci inquadrare il tuo hair oiling in un cronoprogramma, l\'olio ricade in genere nella fase <strong>Nutriente</strong>.';
+
+// le fasi possono essere anche due insieme (es. miele + olio = idra e nutri), mai tutte e tre
+function getPhases(e) {
+  if (e.phases && e.phases.length) return e.phases;
+  return e.phase ? [e.phase] : []; // compatibilità con le voci salvate prima
+}
 
 function renderImpaccoField() {
   const isImp = state.editorType === 'impacco';
   const hasFormula = state.editorType === 'colore' || state.editorType === 'schiaritura';
   const isHeat = state.editorType === 'calore';
+  const isShampoo = state.editorType === 'shampoo';
   $('#impaccoField').classList.toggle('hidden', !isImp);
   $('#phaseField').classList.toggle('hidden', !isImp);
   $('#formulaField').classList.toggle('hidden', !hasFormula);
   $('#thermoField').classList.toggle('hidden', !isHeat);
+  $('#cowashField').classList.toggle('hidden', !isShampoo);
 
   if (hasFormula) {
     $('#formulaInput').placeholder = FORMULA_PLACEHOLDER[state.editorType];
@@ -516,20 +531,28 @@ function renderImpaccoField() {
   }
 
   if (isHeat) $('#thermoCheck').checked = state.thermo;
+  if (isShampoo) $('#cowashCheck').checked = state.cowash;
 
   if (!isImp) return;
   $('#phaseLabelIcon').innerHTML = ICONS.bersaglio;
 
+  const sel = state.impacco.phases;
   const picker = $('#phasePicker');
   picker.innerHTML = '';
   for (const [k, p] of Object.entries(PHASES)) {
+    const isSel = sel.includes(k);
+    const full = sel.length >= 2 && !isSel; // massimo due fasi insieme
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'type-chip' + (state.impacco.phase === k ? ' selected' : '');
+    chip.className = 'type-chip' + (isSel ? ' selected' : '') + (full ? ' disabled' : '');
     chip.innerHTML = `${ICONS[p.icon]} ${p.label}`;
     chip.addEventListener('click', () => {
-      state.impacco.phase = state.impacco.phase === k ? null : k; // ritocca per deselezionare
-      if (state.impacco.phase) state.impacco.oiling = false;      // fase e oiling si escludono
+      if (isSel) {
+        state.impacco.phases = sel.filter((x) => x !== k);
+      } else if (!full) {
+        state.impacco.phases = [...sel, k];
+        state.impacco.oiling = false; // fasi e oiling si escludono
+      }
       renderImpaccoField();
     });
     picker.appendChild(chip);
@@ -543,7 +566,7 @@ function renderImpaccoField() {
   oilChip.innerHTML = `${ICONS.oliva} Hair oiling`;
   oilChip.addEventListener('click', () => {
     state.impacco.oiling = !state.impacco.oiling;
-    if (state.impacco.oiling) state.impacco.phase = null; // l'oiling azzera la fase
+    if (state.impacco.oiling) state.impacco.phases = []; // l'oiling azzera le fasi
     renderImpaccoField();
   });
   oil.appendChild(oilChip);
@@ -666,11 +689,13 @@ async function saveEntry() {
   const cutCm = type === 'taglio' ? state.measureCm : null;
   const isImp = type === 'impacco';
   const extra = {
-    phase: isImp ? state.impacco.phase : null,
+    phases: isImp ? state.impacco.phases : [],
+    phase: null, // campo storico, sostituito da phases
     oiling: isImp ? state.impacco.oiling : false,
     ingredients: isImp ? state.impacco.ingredients : [],
     formula: (type === 'colore' || type === 'schiaritura') ? state.formula : [],
     thermo: type === 'calore' ? state.thermo : false,
+    cowash: type === 'shampoo' ? state.cowash : false,
   };
   const entry = state.editing
     ? { ...state.editing, type, notes, lengthCm, cutCm, ...extra, updatedAt: Date.now() }
@@ -1146,6 +1171,7 @@ async function init() {
     if (e.key === 'Enter') { e.preventDefault(); addIngredient(); }
   });
   $('#thermoCheck').addEventListener('change', (e) => { state.thermo = e.target.checked; });
+  $('#cowashCheck').addEventListener('change', (e) => { state.cowash = e.target.checked; });
   $('#addFormulaBtn').addEventListener('click', addFormula);
   $('#formulaInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addFormula(); }
