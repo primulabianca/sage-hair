@@ -206,8 +206,10 @@ async function deletePhotosFor(entryId) {
 
 // "lapidi": id delle voci eliminate, con data — servono al sync per
 // propagare le cancellazioni invece di far risorgere le voci
-const getTombstones = () => reqP(store('meta').get('tombstones')).then((r) => (r && r.value) || []);
-const setTombstones = (list) => reqP(store('meta', 'readwrite').put({ key: 'tombstones', value: list }));
+const getMeta = (key) => reqP(store('meta').get(key)).then((r) => (r ? r.value : null));
+const setMeta = (key, value) => reqP(store('meta', 'readwrite').put({ key, value }));
+const getTombstones = () => getMeta('tombstones').then((v) => v || []);
+const setTombstones = (list) => setMeta('tombstones', list);
 async function addTombstone(id) {
   const list = await getTombstones();
   list.push({ id, deletedAt: Date.now() });
@@ -294,9 +296,13 @@ function renderCalendar() {
       }
     }
     const shown = icons.slice(0, 4);
+    // se quel giorno c'è una misurazione, il valore si legge senza aprire
+    const lens = dayEntries.filter((e) => e.type === 'lunghezza' && e.lengthCm != null);
+    const lenHtml = lens.length ? `<span class="day-len">${fmtLen(lens[lens.length - 1].lengthCm)}</span>` : '';
     cell.innerHTML =
       `<span class="day-num">${d}</span>` +
       `<span class="day-icons">${shown.join('')}</span>` +
+      lenHtml +
       (icons.length > 4 ? `<span class="day-more">+${icons.length - 4}</span>` : '');
     cell.addEventListener('click', () => openDayModal(key));
     grid.appendChild(cell);
@@ -795,9 +801,15 @@ function renderStats() {
   };
   const eventRows = Object.keys(eventLabels).map((t) => {
     const last = lastOf(t);
-    const when = last
-      ? (daysAgo(last.date) === 0 ? 'oggi' : daysAgo(last.date) === 1 ? 'ieri' : `${daysAgo(last.date)} giorni fa`)
-      : 'mai';
+    let when = 'mai';
+    if (last) {
+      const d = daysAgo(last.date);
+      if (d === 0) when = 'oggi';
+      else if (d === 1) when = 'ieri';
+      else if (d === -1) when = 'domani';
+      else if (d < 0) when = `tra ${-d} giorni`; // voce segnata nel futuro
+      else when = `${d} giorni fa`;
+    }
     return `<div class="last-event-row">${ICONS[t]}<span>${eventLabels[t]}</span><span class="when">${when}</span></div>`;
   }).join('');
   html += `<div class="stat-card"><h3>Quanto tempo è passato…</h3>${eventRows}</div>`;
@@ -905,6 +917,7 @@ function timerStartPause() {
     timer.endsAt = Date.now() + ms;
     timer.remaining = null;
     startTicking();
+    ensureAudioReady(); // sblocca l'audio finché siamo dentro il tocco
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
     }
@@ -935,16 +948,60 @@ function setTimerMinutes(min) {
 
 function timerFinished() {
   $('#timerDone').classList.remove('hidden');
-  beep();
+  playAlarm();
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Sage Hair ⏰', { body: 'Tempo dell\'impacco scaduto!' });
   }
   if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
 }
 
+// ---- suoneria: trillo predefinito o un audio scelto dalla libreria ----
+let audioCtx = null;
+let customSound = null;   // { name, blob } dal database
+let customBuffer = null;  // blob decodificato, pronto da suonare
+
+async function loadCustomSound() {
+  customSound = await getMeta('timerSound');
+  const has = !!customSound;
+  $('#soundName').textContent = has
+    ? `Suoneria: ${customSound.name.length > 34 ? customSound.name.slice(0, 32) + '…' : customSound.name}`
+    : 'Suoneria: trillo delicato (predefinita)';
+  $('#resetSoundBtn').classList.toggle('hidden', !has);
+}
+
+// va chiamata dentro un tocco dell'utente: sblocca l'audio e prepara il suono
+async function ensureAudioReady() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    if (customSound && !customBuffer) {
+      customBuffer = await audioCtx.decodeAudioData(await customSound.blob.arrayBuffer());
+    }
+  } catch { customBuffer = null; }
+}
+
+function playAlarm() {
+  if (audioCtx && customBuffer) {
+    try {
+      const src = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      src.buffer = customBuffer;
+      src.connect(gain); gain.connect(audioCtx.destination);
+      const dur = Math.min(customBuffer.duration, 30); // al massimo 30 secondi
+      gain.gain.setValueAtTime(1, audioCtx.currentTime);
+      gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime + dur - 0.4, 0.15);
+      src.start();
+      src.stop(audioCtx.currentTime + dur);
+      return;
+    } catch { /* si ripiega sul trillo */ }
+  }
+  beep();
+}
+
 function beep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = ctx;
     [0, 0.35, 0.7].forEach((t) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -957,6 +1014,22 @@ function beep() {
       osc.stop(ctx.currentTime + t + 0.32);
     });
   } catch { /* audio non disponibile */ }
+}
+
+async function pickSound(file) {
+  if (!file) return;
+  if (file.size > 15 * 1024 * 1024) { $('#soundName').textContent = 'File troppo grande (max 15 MB).'; return; }
+  customSound = { name: file.name, blob: file };
+  customBuffer = null;
+  await setMeta('timerSound', customSound);
+  await loadCustomSound();
+  await ensureAudioReady(); // siamo dentro un gesto: prova subito che si decodifichi
+  if (customSound && !customBuffer) {
+    $('#soundName').textContent = 'Questo file audio non si riesce a leggere: provane un altro.';
+    customSound = null;
+    await setMeta('timerSound', null);
+    $('#resetSoundBtn').classList.add('hidden');
+  }
 }
 
 // ---------- Backup: esporta / importa ----------
@@ -1051,8 +1124,10 @@ async function exportData() {
 async function shareBackup() {
   const status = $('#backupStatus');
   status.textContent = 'Preparo il backup…';
-  const { payload, name, blob } = await buildBackupFile();
-  const file = new File([blob], name, { type: 'application/json' });
+  const { payload, name } = await buildBackupFile();
+  // Chrome su Android non permette di condividere file .json: lo stesso
+  // contenuto viaggia come .txt, e l'import lo legge senza differenze
+  const file = new File([JSON.stringify(payload)], name.replace(/\.json$/, '.txt'), { type: 'text/plain' });
   try {
     await navigator.share({ files: [file], title: 'Backup Sage Hair' });
     status.textContent = `Backup condiviso: ${payload.entries.length} voci, ${payload.photos.length} foto.`;
@@ -1123,6 +1198,7 @@ function toggleUnit() {
   $('#unitToggle').textContent = state.unit;
   updateCurrentLength();
   if (!$('#editorModal').classList.contains('hidden')) renderMeasureValue();
+  if (state.view === 'calendar') renderCalendar(); // le misure nelle celle seguono l'unità
   if (state.view === 'stats') renderStats();
   if (state.openDate && !$('#dayModal').classList.contains('hidden')) renderDayEntries();
 }
@@ -1199,7 +1275,7 @@ async function init() {
   $('#exportBtn').addEventListener('click', exportData);
   // dove il sistema ha il menu di condivisione (telefoni, in pratica),
   // "Condividi" diventa il gesto principale e il download passa in secondo piano
-  const probeFile = new File(['x'], 'x.json', { type: 'application/json' });
+  const probeFile = new File(['x'], 'x.txt', { type: 'text/plain' });
   if (navigator.canShare && navigator.canShare({ files: [probeFile] })) {
     $('#shareBtn').classList.remove('hidden');
     $('#shareBtn').addEventListener('click', shareBackup);
@@ -1229,6 +1305,15 @@ async function init() {
   $('#customMin').addEventListener('change', () => {
     const v = parseInt($('#customMin').value, 10);
     if (v >= 1) setTimerMinutes(Math.min(v, 600));
+  });
+  loadCustomSound();
+  $('#pickSoundBtn').addEventListener('click', () => $('#soundInput').click());
+  $('#soundInput').addEventListener('change', (e) => { pickSound(e.target.files[0]); e.target.value = ''; });
+  $('#testSoundBtn').addEventListener('click', async () => { await ensureAudioReady(); playAlarm(); });
+  $('#resetSoundBtn').addEventListener('click', async () => {
+    customSound = null; customBuffer = null;
+    await setMeta('timerSound', null);
+    await loadCustomSound();
   });
 
   renderCalendar();

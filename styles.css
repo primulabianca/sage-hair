@@ -45,6 +45,7 @@ h1, h2, h3, h4 { font-family: Georgia, "Times New Roman", serif; font-weight: 60
 .brand-icon { width: 42px; height: 42px; }
 .brand h1 { font-size: 1.45rem; color: var(--brown-dark); letter-spacing: .5px; }
 .tagline { font-size: .72rem; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
 .current-len {
@@ -119,6 +120,7 @@ h1, h2, h3, h4 { font-family: Georgia, "Times New Roman", serif; font-weight: 60
 .day-cell.today .day-num { color: var(--sage-dark); }
 .day-icons { display: flex; flex-wrap: wrap; gap: 2px; }
 .day-icons svg { width: 16px; height: 16px; }
+.day-len { font-size: .62rem; font-weight: 800; color: var(--sage-dark); letter-spacing: -.2px; margin-top: auto; }
 .day-more { font-size: .65rem; color: var(--muted); }
 
 .legend {
@@ -305,6 +307,9 @@ textarea:focus, input[type="number"]:focus, input[type="text"]:focus { outline: 
 .timer-custom input { width: 90px; text-align: center; }
 .timer-controls { display: flex; gap: 10px; max-width: 340px; margin: 0 auto; }
 .timer-done { margin-top: 16px; font-size: 1.05rem; color: var(--sage-dark); font-weight: 700; }
+.timer-sound { margin-top: 22px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.timer-sound .muted { margin-bottom: 10px; }
+.timer-sound-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 
 /* ===== Impostazioni ===== */
 .settings-block { margin-bottom: 20px; }

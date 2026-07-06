@@ -25,12 +25,14 @@
       <p class="tagline">diario dei capelli</p>
     </div>
   </div>
-  <div class="topbar-actions">
+  <div class="topbar-right">
+    <div class="topbar-actions">
+      <button id="unitToggle" class="unit-toggle" title="Unità di misura">cm</button>
+      <button id="settingsBtn" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+      </button>
+    </div>
     <button id="currentLen" class="current-len hidden" title="Lunghezza corrente — tocca per aggiornarla"></button>
-    <button id="unitToggle" class="unit-toggle" title="Unità di misura">cm</button>
-    <button id="settingsBtn" class="icon-btn" title="Impostazioni" aria-label="Impostazioni">
-      <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
-    </button>
   </div>
 </header>
 
@@ -83,6 +85,15 @@
         <button id="timerReset" class="big-btn ghost">Azzera</button>
       </div>
       <p id="timerDone" class="timer-done hidden">✨ Tempo scaduto! Risciacqua pure.</p>
+      <div class="timer-sound">
+        <p class="muted" id="soundName">Suoneria: trillo delicato (predefinita)</p>
+        <div class="timer-sound-row">
+          <button id="pickSoundBtn" class="pill-btn">Scegli dalla libreria</button>
+          <button id="testSoundBtn" class="pill-btn">Prova</button>
+          <button id="resetSoundBtn" class="pill-btn hidden">Ripristina</button>
+        </div>
+        <input type="file" id="soundInput" accept="audio/*" hidden>
+      </div>
     </div>
   </section>
 </main>
@@ -177,7 +188,7 @@
       <details class="help-details">
         <summary>Come funziona?</summary>
         <ul>
-          <li><strong>Condividi backup</strong> (sul telefono) prepara il file e ti chiede subito dove mandarlo: WhatsApp, Telegram, Google Drive, email… Il file ha un nome chiaro con data e ora, così lo ritrovi sempre.</li>
+          <li><strong>Condividi backup</strong> (sul telefono) prepara il file e ti chiede subito dove mandarlo: WhatsApp, Telegram, Google Drive, email… Il file ha un nome chiaro con data e ora, così lo ritrovi sempre. Viaggia in formato testo (.txt) perché i telefoni non condividono i file .json: all'importazione non cambia nulla.</li>
           <li><strong>Scarica soltanto</strong> salva il file su questo dispositivo, senza inviarlo da nessuna parte.</li>
           <li><strong>Importa backup</strong> legge un file di backup e lo unisce a quello che hai già: non cancella niente, e se una voce esiste in entrambi tiene la versione più recente. Puoi importare lo stesso file due volte senza creare doppioni.</li>
         </ul>
@@ -187,7 +198,7 @@
         <button id="shareBtn" class="big-btn primary hidden">Condividi backup</button>
         <button id="exportBtn" class="big-btn primary">Esporta dati</button>
         <button id="importBtn" class="big-btn ghost">Importa backup</button>
-        <input type="file" id="importInput" accept=".json,application/json" hidden>
+        <input type="file" id="importInput" accept=".json,.txt,application/json,text/plain" hidden>
       </div>
       <p id="backupStatus" class="muted"></p>
     </div>
