@@ -201,6 +201,14 @@ textarea:focus, input[type="number"]:focus, input[type="text"]:focus { outline: 
 }
 .measure-tip .tip-icon svg { width: 22px; height: 22px; flex-shrink: 0; }
 
+.check-row {
+  display: flex; align-items: center; gap: 9px; margin: 12px 2px 2px;
+  font-size: .9rem; color: var(--text); cursor: pointer;
+}
+.check-row input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--sage-dark); cursor: pointer;
+}
+
 /* sotto-dettagli impacco */
 .optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
 .label-icon svg { width: 17px; height: 17px; vertical-align: -3px; margin-right: 5px; }

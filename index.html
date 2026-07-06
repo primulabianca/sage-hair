@@ -72,6 +72,7 @@
         <button class="pill-btn preset" data-min="30">30 min</button>
         <button class="pill-btn preset" data-min="45">45 min</button>
         <button class="pill-btn preset" data-min="60">1 ora</button>
+        <button class="pill-btn preset" data-min="120">2 ore</button>
       </div>
       <div class="timer-custom">
         <label for="customMin">Minuti:</label>
@@ -116,9 +117,6 @@
       </div>
       <input type="range" id="measSlider" min="10" max="150" step="0.5" aria-label="Selettore misura">
     </div>
-    <div id="thermoField" class="hidden">
-      <div id="thermoPicker" class="type-picker"></div>
-    </div>
     <div id="impaccoField" class="hidden">
       <label class="field-label" for="ingredientInput">Ingredienti <span class="optional">· facoltativi</span></label>
       <div class="ing-row">
@@ -137,17 +135,22 @@
     </div>
     <label class="field-label" for="notesInput">Note</label>
     <textarea id="notesInput" rows="6" placeholder="Racconta: durata, sensazioni, come sono i capelli oggi…"></textarea>
-    <p id="entryTip" class="measure-tip hidden"></p>
+    <div id="thermoField" class="hidden">
+      <label class="check-row">
+        <input type="checkbox" id="thermoCheck">
+        <span>Ho usato un termoprotettore</span>
+      </label>
+    </div>
     <div id="phaseField" class="hidden">
       <label class="field-label"><span class="label-icon" id="phaseLabelIcon"></span>Fase del cronoprogramma <span class="optional">· facoltativa</span></label>
       <div id="phasePicker" class="type-picker"></div>
       <label class="field-label">Hair oiling <span class="optional">· facoltativo</span></label>
       <div id="oilingPicker" class="type-picker"></div>
-      <p id="cronoTip" class="measure-tip"></p>
     </div>
     <label class="field-label">Foto (max 5)</label>
     <div id="photoGrid" class="photo-grid"></div>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <p id="entryTip" class="measure-tip hidden"></p>
     <div class="editor-actions">
       <button id="deleteEntryBtn" class="big-btn danger hidden">Elimina</button>
       <button id="saveEntryBtn" class="big-btn primary">Salva</button>
@@ -201,7 +204,7 @@
     </div>
     <div class="settings-block">
       <h4>Info</h4>
-      <p class="muted">Tutti i dati restano sui tuoi dispositivi e sulla tua rete di casa. Nessun account, nessun cloud. 🌱</p>
+      <p class="muted">Tutti i dati restano sui tuoi dispositivi e sulla tua rete di casa. Nessun account, nessun cloud: i tuoi dati restano solo tuoi, nei tuoi device personali. 🌱</p>
     </div>
   </div>
 </div>

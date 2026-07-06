@@ -458,9 +458,11 @@ function renderTypePicker() {
 function updateMeasureField() {
   const conf = MEASURE_CONF[state.editorType];
   renderImpaccoField();
+  // il consiglio (lampadina) sta sempre in fondo all'editor, dopo le foto
   const tipEl = $('#entryTip');
-  if (conf && conf.tip) {
-    tipEl.innerHTML = `<span class="tip-icon">${ICONS.lampadina}</span><span>${conf.tip}</span>`;
+  const tipHtml = state.editorType === 'impacco' ? CRONO_TIP : (conf && conf.tip) || null;
+  if (tipHtml) {
+    tipEl.innerHTML = `<span class="tip-icon">${ICONS.lampadina}</span><span>${tipHtml}</span>`;
     tipEl.classList.remove('hidden');
   } else {
     tipEl.classList.add('hidden');
@@ -497,6 +499,7 @@ function nudgeMeasure(deltaCm) {
 
 // ---- campi specifici per tipo: impacco, colore/schiaritura, phon/piastra ----
 const FORMULA_PLACEHOLDER = { colore: 'es. 7.35 per 10 vol', schiaritura: 'es. 20 vol · 6%' };
+const CRONO_TIP = 'Il <strong>cronoprogramma capillare</strong> è la routine che alterna impacchi idratanti, nutrienti e proteici per mantenere i capelli in equilibrio. L\'hair oiling (bagno d\'olio) è un rituale a sé, che di solito si concentra sulla cute; se preferisci inquadrarlo nel cronoprogramma, l\'olio ricade in genere nella fase nutriente.';
 
 function renderImpaccoField() {
   const isImp = state.editorType === 'impacco';
@@ -512,23 +515,10 @@ function renderImpaccoField() {
     renderFormulaChips();
   }
 
-  if (isHeat) {
-    const box = $('#thermoPicker');
-    box.innerHTML = '';
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'type-chip' + (state.thermo ? ' selected' : '');
-    chip.innerHTML = `${ICONS.scudo} Ho usato un termoprotettore`;
-    chip.addEventListener('click', () => {
-      state.thermo = !state.thermo;
-      renderImpaccoField();
-    });
-    box.appendChild(chip);
-  }
+  if (isHeat) $('#thermoCheck').checked = state.thermo;
 
   if (!isImp) return;
   $('#phaseLabelIcon').innerHTML = ICONS.bersaglio;
-  $('#cronoTip').innerHTML = `<span class="tip-icon">${ICONS.lampadina}</span><span>Il <strong>cronoprogramma capillare</strong> è la routine che alterna impacchi idratanti, nutrienti e proteici per mantenere i capelli in equilibrio. L'hair oiling (bagno d'olio) è un rituale a sé.</span>`;
 
   const picker = $('#phasePicker');
   picker.innerHTML = '';
@@ -769,13 +759,14 @@ function renderStats() {
     const list = state.entries.filter((e) => e.type === type).sort((a, b) => b.date.localeCompare(a.date));
     return list[0] || null;
   };
+  // stesso ordine per frequenza usato ovunque (v. TYPES)
   const eventLabels = {
     shampoo: 'Ultimo shampoo',
+    impacco: 'Ultimo impacco',
+    colore: 'Ultimo colore',
     taglio: 'Ultimo taglio',
     schiaritura: 'Ultima schiaritura',
-    colore: 'Ultimo colore',
     calore: 'Ultimo uso di phon/piastra',
-    impacco: 'Ultimo impacco',
   };
   const eventRows = Object.keys(eventLabels).map((t) => {
     const last = lastOf(t);
@@ -1154,6 +1145,7 @@ async function init() {
   $('#ingredientInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addIngredient(); }
   });
+  $('#thermoCheck').addEventListener('change', (e) => { state.thermo = e.target.checked; });
   $('#addFormulaBtn').addEventListener('click', addFormula);
   $('#formulaInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addFormula(); }
