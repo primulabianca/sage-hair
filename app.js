@@ -980,7 +980,32 @@ async function ensureAudioReady() {
   } catch { customBuffer = null; }
 }
 
+// nodi audio in riproduzione: servono per fermare la suoneria e per
+// evitare che due prove partano in parallelo
+let alarmNodes = [];
+const isAlarmPlaying = () => alarmNodes.length > 0;
+
+function updateTestBtn() {
+  $('#testSoundBtn').textContent = isAlarmPlaying() ? 'Stop' : 'Prova';
+}
+
+function stopAlarm() {
+  for (const n of alarmNodes) { try { n.stop(); } catch { /* già fermo */ } }
+  alarmNodes = [];
+  updateTestBtn();
+}
+
+function trackNode(node) {
+  alarmNodes.push(node);
+  node.onended = () => {
+    alarmNodes = alarmNodes.filter((x) => x !== node);
+    updateTestBtn();
+  };
+  updateTestBtn();
+}
+
 function playAlarm() {
+  stopAlarm(); // mai due tracce sovrapposte
   if (audioCtx && customBuffer) {
     try {
       const src = audioCtx.createBufferSource();
@@ -992,6 +1017,7 @@ function playAlarm() {
       gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime + dur - 0.4, 0.15);
       src.start();
       src.stop(audioCtx.currentTime + dur);
+      trackNode(src);
       return;
     } catch { /* si ripiega sul trillo */ }
   }
@@ -1012,6 +1038,7 @@ function beep() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.3);
       osc.start(ctx.currentTime + t);
       osc.stop(ctx.currentTime + t + 0.32);
+      trackNode(osc);
     });
   } catch { /* audio non disponibile */ }
 }
@@ -1309,7 +1336,11 @@ async function init() {
   loadCustomSound();
   $('#pickSoundBtn').addEventListener('click', () => $('#soundInput').click());
   $('#soundInput').addEventListener('change', (e) => { pickSound(e.target.files[0]); e.target.value = ''; });
-  $('#testSoundBtn').addEventListener('click', async () => { await ensureAudioReady(); playAlarm(); });
+  $('#testSoundBtn').addEventListener('click', async () => {
+    if (isAlarmPlaying()) { stopAlarm(); return; } // secondo tocco = stop
+    await ensureAudioReady();
+    playAlarm();
+  });
   $('#resetSoundBtn').addEventListener('click', async () => {
     customSound = null; customBuffer = null;
     await setMeta('timerSound', null);
