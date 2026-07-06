@@ -7,17 +7,29 @@
    ===================================================== */
 
 // ---------- Tipi di voce e icone ----------
+// l'ordine qui sotto decide l'ordine ovunque (legenda, scelta tipo, statistiche):
+// dal più frequente al più raro
 const TYPES = {
+  shampoo:    { label: 'Shampoo' },
   impacco:    { label: 'Impacco' },
-  lunghezza:  { label: 'Lunghezza' },
-  schiaritura:{ label: 'Schiaritura' },
   colore:     { label: 'Colore' },
+  lunghezza:  { label: 'Lunghezza' },
   taglio:     { label: 'Taglio' },
+  schiaritura:{ label: 'Schiaritura' },
   calore:     { label: 'Phon / piastra' },
   nota:       { label: 'Nota' },
 };
 
 const ICONS = {
+  // bolle di sapone
+  shampoo: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="9" cy="13.5" r="5.6" fill="#cfe4ef" stroke="#5f8ca6" stroke-width="1.3"/>
+    <path d="M5.9 12.6 a3.5 3.5 0 0 1 2.1-3.1" stroke="#ffffff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <circle cx="17" cy="7.8" r="3.4" fill="#cfe4ef" stroke="#5f8ca6" stroke-width="1.2"/>
+    <path d="M15.3 7.3 a2 2 0 0 1 1.2-1.7" stroke="#ffffff" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="18.3" cy="15.4" r="2.4" fill="#cfe4ef" stroke="#5f8ca6" stroke-width="1.1"/>
+    <circle cx="13.7" cy="19.2" r="1.4" fill="#cfe4ef" stroke="#5f8ca6" stroke-width="1"/>
+  </svg>`,
   // metro da sarta giallo: nastro steso con tacche e placchetta in punta
   lunghezza: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <g transform="rotate(-8 12 12)">
@@ -256,8 +268,9 @@ async function renderDayEntries() {
   for (const e of entries) {
     const card = document.createElement('div');
     card.className = 'entry-card';
-    const lengthHtml = e.type === 'lunghezza' && e.lengthCm != null
-      ? `<div class="entry-length">${fmtLen(e.lengthCm)}</div>` : '';
+    let lengthHtml = '';
+    if (e.type === 'lunghezza' && e.lengthCm != null) lengthHtml = `<div class="entry-length">${fmtLen(e.lengthCm)}</div>`;
+    if (e.type === 'taglio' && e.cutCm != null) lengthHtml = `<div class="entry-length">−${fmtLen(e.cutCm)}</div>`;
     card.innerHTML =
       `<span class="entry-icon">${ICONS[e.type] || ''}</span>
        <div class="entry-body">
@@ -282,18 +295,33 @@ async function renderDayEntries() {
 }
 
 // ---------- Editor voce ----------
+// tipi con misura numerica: contatore a scorrimento invece della tastiera
+const MEASURE_CONF = {
+  lunghezza: {
+    label: 'Lunghezza misurata', min: 10, max: 150, fallback: 60,
+    tip: '📏 <strong>Come si misura?</strong> Appoggia l\'inizio del metro all\'attaccatura dei capelli sulla fronte, poi segui la chioma fino al punto della schiena dove arriva la ciocca più lunga. Puoi misurare da bagnati o da asciutti, come preferisci: l\'importante è farlo sempre nello stesso modo, così le statistiche saranno più attendibili. (Per orientarti: in genere si parte da 45–90 cm.)',
+  },
+  taglio: {
+    label: 'Quanto hai tagliato', min: 0.5, max: 30, fallback: 2,
+    tip: '✂️ In genere una spuntatina è 1–3 cm, un taglio deciso arriva a 10–15. Se non ricordi al centimetro, va benissimo una stima.',
+  },
+};
+
+function lastMeasuredCm() {
+  const m = state.entries.filter((e) => e.type === 'lunghezza' && e.lengthCm != null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return m.length ? m[0].lengthCm : null;
+}
+
 function openEditor(entry = null) {
   state.editing = entry;
-  state.editorType = entry ? entry.type : 'impacco';
+  state.editorType = entry ? entry.type : 'shampoo';
   state.photoSlots.forEach((s) => URL.revokeObjectURL(s.url));
   state.photoSlots = [];
 
   $('#editorTitle').textContent = entry ? 'Modifica voce' : 'Nuova voce';
   $('#notesInput').value = entry ? entry.notes || '' : '';
-  $('#lengthInput').value = entry && entry.lengthCm != null
-    ? cmToDisplay(entry.lengthCm).toFixed(1).replace(/\.0$/, '') : '';
   $('#deleteEntryBtn').classList.toggle('hidden', !entry);
-  $('#lengthUnitLabel').textContent = state.unit;
 
   renderTypePicker();
   renderPhotoGrid();
@@ -320,15 +348,44 @@ function renderTypePicker() {
     chip.addEventListener('click', () => {
       state.editorType = k;
       renderTypePicker();
-      updateLengthFieldVisibility();
     });
     picker.appendChild(chip);
   }
-  updateLengthFieldVisibility();
+  updateMeasureField();
 }
 
-function updateLengthFieldVisibility() {
-  $('#lengthField').classList.toggle('hidden', state.editorType !== 'lunghezza');
+// mostra/configura il contatore per i tipi che hanno una misura
+function updateMeasureField() {
+  const conf = MEASURE_CONF[state.editorType];
+  $('#measureField').classList.toggle('hidden', !conf);
+  if (!conf) return;
+  $('#measureLabel').textContent = conf.label;
+  $('#measureTip').innerHTML = conf.tip;
+  const slider = $('#measSlider');
+  slider.min = conf.min;
+  slider.max = conf.max;
+  const e = state.editing;
+  if (e && e.type === state.editorType) {
+    state.measureCm = (state.editorType === 'lunghezza' ? e.lengthCm : e.cutCm) ?? conf.fallback;
+  } else if (state.editorType === 'lunghezza') {
+    state.measureCm = lastMeasuredCm() ?? conf.fallback; // riparti dall'ultima misura
+  } else {
+    state.measureCm = conf.fallback;
+  }
+  renderMeasureValue();
+}
+
+function renderMeasureValue() {
+  $('#measValue').textContent = fmtLen(state.measureCm);
+  const slider = $('#measSlider');
+  if (parseFloat(slider.value) !== state.measureCm) slider.value = state.measureCm;
+}
+
+function nudgeMeasure(deltaCm) {
+  const conf = MEASURE_CONF[state.editorType];
+  if (!conf) return;
+  state.measureCm = Math.min(conf.max, Math.max(conf.min, Math.round((state.measureCm + deltaCm) * 10) / 10));
+  renderMeasureValue();
 }
 
 function renderPhotoGrid() {
@@ -390,15 +447,11 @@ async function onPhotosPicked(ev) {
 async function saveEntry() {
   const type = state.editorType;
   const notes = $('#notesInput').value.trim();
-  let lengthCm = null;
-  if (type === 'lunghezza') {
-    const v = parseFloat($('#lengthInput').value.replace(',', '.'));
-    if (isNaN(v) || v <= 0) { alert('Inserisci la lunghezza misurata 🙂'); return; }
-    lengthCm = Math.round(displayToCm(v) * 10) / 10;
-  }
+  const lengthCm = type === 'lunghezza' ? state.measureCm : null;
+  const cutCm = type === 'taglio' ? state.measureCm : null;
   const entry = state.editing
-    ? { ...state.editing, type, notes, lengthCm, updatedAt: Date.now() }
-    : { id: uuid(), date: state.openDate, type, notes, lengthCm, createdAt: Date.now(), updatedAt: Date.now() };
+    ? { ...state.editing, type, notes, lengthCm, cutCm, updatedAt: Date.now() }
+    : { id: uuid(), date: state.openDate, type, notes, lengthCm, cutCm, createdAt: Date.now(), updatedAt: Date.now() };
 
   await putEntry(entry);
   await deletePhotosFor(entry.id);
@@ -484,6 +537,7 @@ function renderStats() {
     return list[0] || null;
   };
   const eventLabels = {
+    shampoo: 'Ultimo shampoo',
     taglio: 'Ultimo taglio',
     schiaritura: 'Ultima schiaritura',
     colore: 'Ultimo colore',
@@ -818,7 +872,7 @@ function toggleUnit() {
   state.unit = state.unit === 'cm' ? 'in' : 'cm';
   localStorage.setItem('chioma-unit', state.unit);
   $('#unitToggle').textContent = state.unit;
-  $('#lengthUnitLabel').textContent = state.unit;
+  if (!$('#editorModal').classList.contains('hidden')) renderMeasureValue();
   if (state.view === 'stats') renderStats();
   if (state.openDate && !$('#dayModal').classList.contains('hidden')) renderDayEntries();
 }
@@ -862,6 +916,12 @@ async function init() {
 
   $('#addEntryBtn').addEventListener('click', () => openEditor(null));
   $('#saveEntryBtn').addEventListener('click', saveEntry);
+  $('#measMinus').addEventListener('click', () => nudgeMeasure(-0.5));
+  $('#measPlus').addEventListener('click', () => nudgeMeasure(0.5));
+  $('#measSlider').addEventListener('input', () => {
+    state.measureCm = parseFloat($('#measSlider').value);
+    $('#measValue').textContent = fmtLen(state.measureCm);
+  });
   $('#deleteEntryBtn').addEventListener('click', deleteCurrentEntry);
   $('#photoInput').addEventListener('change', onPhotosPicked);
   $('#lightbox').addEventListener('click', () => $('#lightbox').classList.add('hidden'));

@@ -7,9 +7,11 @@ dispositivi e sulla tua rete di casa: niente account, niente cloud.
 
 - **Calendario mensile** — tocca un giorno per vedere o aggiungere le voci.
 - **Voci con note e foto** — ogni voce ha un campo note spazioso e fino a 5 foto.
-- **Tipi di voce con icona** (visibili anche dal calendario):
-  📏 Lunghezza (metro giallo) · 🥣 Impacco (ciotolina) · ☠️ Schiaritura (flacone col teschio) ·
-  🎨 Colore (tavolozza) · ✂️ Taglio (forbice) · 🧯 Phon/piastra (estintore) · 🌿 Nota
+- **Tipi di voce con icona** (visibili anche dal calendario, in ordine di frequenza d'uso):
+  🫧 Shampoo (bolle) · 🥣 Impacco (ciotolina) · 🎨 Colore (tavolozza) · 📏 Lunghezza (metro giallo) ·
+  ✂️ Taglio (forbice) · ☠️ Schiaritura (flacone col teschio) · 🧯 Phon/piastra (estintore) · 🌿 Nota
+- **Misure senza tastiera** — per Lunghezza e Taglio i centimetri si scelgono con un
+  contatore a scorrimento, con i consigli su come misurare in modo costante.
 - **Lunghezza in cm o pollici** — il bottone `cm`/`in` in alto converte tutto.
 - **Statistiche** — ultima misura, crescita totale e mensile, grafico dell'andamento,
   conteggio voci, "quanto tempo è passato dall'ultimo taglio/schiaritura/…".
