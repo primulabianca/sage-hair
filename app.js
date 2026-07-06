@@ -729,7 +729,7 @@ async function buildBackupFile() {
   const ds = await collectDataset();
   const payload = { app: 'sage-hair', version: 2, exportedAt: new Date().toISOString(), unit: state.unit, ...ds };
   const d = new Date();
-  const name = `sage-hair-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  const name = `sage_hair_backup_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_ore${pad(d.getHours())}-${pad(d.getMinutes())}.json`;
   return { payload, name, blob: new Blob([JSON.stringify(payload)], { type: 'application/json' }) };
 }
 
@@ -873,11 +873,14 @@ async function init() {
     showModal('settingsModal');
   });
   $('#exportBtn').addEventListener('click', exportData);
-  // "Condividi" solo dove il sistema lo supporta (telefoni, in pratica)
+  // dove il sistema ha il menu di condivisione (telefoni, in pratica),
+  // "Condividi" diventa il gesto principale e il download passa in secondo piano
   const probeFile = new File(['x'], 'x.json', { type: 'application/json' });
   if (navigator.canShare && navigator.canShare({ files: [probeFile] })) {
     $('#shareBtn').classList.remove('hidden');
     $('#shareBtn').addEventListener('click', shareBackup);
+    $('#exportBtn').classList.replace('primary', 'ghost');
+    $('#exportBtn').textContent = 'Scarica soltanto';
   }
   // sync WiFi: se l'app è servita dal server locale, l'indirizzo è già quello giusto
   const savedSyncUrl = localStorage.getItem('chioma-sync-url')

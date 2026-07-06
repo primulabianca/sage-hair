@@ -135,38 +135,36 @@
       <details class="help-details">
         <summary>Come funziona?</summary>
         <ul>
-          <li><strong>Esporta dati</strong> crea il file di backup e lo salva su questo dispositivo.</li>
-          <li><strong>Condividi backup</strong> (compare solo sul telefono) fa la stessa cosa, ma ti apre subito il menu di condivisione: due tocchi e il file è su Google Drive, in una mail a te stessa o su WhatsApp.</li>
-          <li><strong>Importa dati</strong> legge un file di backup e lo unisce a quello che hai già: non cancella niente, e se una voce esiste in entrambi tiene la versione più recente. Puoi importare lo stesso file due volte senza creare doppioni.</li>
+          <li><strong>Condividi backup</strong> (sul telefono) prepara il file e ti chiede subito dove mandarlo: WhatsApp, Telegram, Google Drive, email… Il file ha un nome chiaro con data e ora, così lo ritrovi sempre.</li>
+          <li><strong>Scarica soltanto</strong> salva il file su questo dispositivo, senza inviarlo da nessuna parte.</li>
+          <li><strong>Importa backup</strong> legge un file di backup e lo unisce a quello che hai già: non cancella niente, e se una voce esiste in entrambi tiene la versione più recente. Puoi importare lo stesso file due volte senza creare doppioni.</li>
         </ul>
-        <p>💡 Consiglio: esporta un backup ogni tanto e tienilo in un posto sicuro (per esempio su Drive). Così, anche se perdi il telefono, il tuo diario è salvo.</p>
+        <p>💡 Consiglio: manda un backup a te stessa ogni tanto (per esempio su Drive o via email). Così, anche se perdi il telefono, il tuo diario è salvo.</p>
       </details>
       <div class="settings-row">
-        <button id="exportBtn" class="big-btn primary">Esporta dati</button>
         <button id="shareBtn" class="big-btn primary hidden">Condividi backup</button>
-        <button id="importBtn" class="big-btn ghost">Importa dati</button>
+        <button id="exportBtn" class="big-btn primary">Esporta dati</button>
+        <button id="importBtn" class="big-btn ghost">Importa backup</button>
         <input type="file" id="importInput" accept=".json,application/json" hidden>
       </div>
       <p id="backupStatus" class="muted"></p>
     </div>
     <div class="settings-block">
-      <h4>Sincronizzazione WiFi 📶</h4>
-      <p class="muted">Il modo più comodo per tenere allineati telefono e computer: quando sono a casa sulla stessa rete WiFi, premi un bottone e i due diari diventano identici, foto comprese. Senza account e senza internet: i dati non escono da casa tua.</p>
       <details class="help-details">
-        <summary>Come si usa, passo per passo?</summary>
+        <summary>🧪 Sincronizzazione WiFi (per utenti esperti)</summary>
+        <p>Chi usa Sage Hair anche sul computer può allineare i dispositivi in automatico sulla rete di casa, senza passare dai backup. Richiede di avviare un piccolo programma sul computer e di ricopiare un indirizzo di rete: se queste parole suonano ostiche, il backup qui sopra fa lo stesso lavoro 🙂</p>
         <ol>
           <li>Sul computer, avvia Sage Hair col doppio click su <strong>avvia-sage-hair</strong>: oltre ad aprire l'app, accende un piccolo "punto d'incontro" per i dati.</li>
-          <li>Nella finestra che resta aperta sul computer c'è scritto l'indirizzo da usare dal telefono (qualcosa come <em>http://192.168.1.10:8420</em>). Scrivilo qui sotto — serve solo la prima volta, poi resta memorizzato.</li>
-          <li>Premi <strong>Sincronizza ora</strong>. Fine! Fallo su entrambi i dispositivi quando vuoi allinearli.</li>
+          <li>Nella finestra che resta aperta sul computer c'è scritto l'indirizzo da usare (qualcosa come <em>http://192.168.1.10:8420</em>). Scrivilo qui sotto — serve solo la prima volta, poi resta memorizzato.</li>
+          <li>Premi <strong>Sincronizza ora</strong>. Fallo su entrambi i dispositivi quando vuoi allinearli.</li>
         </ol>
-        <p>Se qualcosa non va, i controlli sono sempre gli stessi: il server sul computer è acceso? Telefono e computer sono sulla stessa WiFi? L'indirizzo scritto sotto è quello mostrato dal server?</p>
+        <label class="field-label" for="syncUrl">Indirizzo del computer</label>
+        <input type="text" id="syncUrl" placeholder="es. http://192.168.1.10:8420" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="settings-row" style="margin-top:10px;">
+          <button id="syncBtn" class="big-btn primary">Sincronizza ora</button>
+        </div>
+        <p id="syncStatus" class="muted"></p>
       </details>
-      <label class="field-label" for="syncUrl">Indirizzo del computer</label>
-      <input type="text" id="syncUrl" placeholder="es. http://192.168.1.10:8420" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <div class="settings-row" style="margin-top:10px;">
-        <button id="syncBtn" class="big-btn primary">Sincronizza ora</button>
-      </div>
-      <p id="syncStatus" class="muted"></p>
     </div>
     <div class="settings-block">
       <h4>Info</h4>

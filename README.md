@@ -40,15 +40,18 @@ Sul telefono apri `https://primulabianca.github.io/sage-hair/`:
 
 ## Passare i dati tra i dispositivi
 
-Tre modi, dal più universale al più comodo:
+Il modo principale è il **backup condiviso** (menu ⋯):
 
-1. **Esporta / Importa** (menu ⋯) — scarica un file con tutto (foto comprese), lo porti
-   sull'altro dispositivo come vuoi e lo importi. Funziona sempre, ovunque.
-2. **Condividi backup** (menu ⋯, solo su telefono) — come sopra, ma il file va dritto nel
-   menu di condivisione: due tocchi ed è su Drive/email/WhatsApp.
-3. **Sincronizzazione WiFi** (menu ⋯) — col server acceso sul computer, "Sincronizza ora"
-   unisce i dati dei due dispositivi: per ogni voce vince la versione più recente e le
-   cancellazioni si propagano. Sul computer funziona subito (l'indirizzo è precompilato).
+- Sul telefono, **Condividi backup** prepara un file con tutto (foto comprese) e apre il
+  menu di condivisione: WhatsApp, Telegram, Drive, email… Il file ha un nome parlante con
+  data e ora (es. `sage_hair_backup_2026-07-06_ore15-30.json`).
+- Sull'altro dispositivo, **Importa backup** lo unisce ai dati esistenti: per ogni voce
+  vince la versione più recente, niente doppioni, e importare due volte non fa danni.
+- Sul computer c'è **Esporta dati** (download classico del file).
+
+Per chi ha dimestichezza c'è anche la **Sincronizzazione WiFi** (menu ⋯ → sezione "per
+utenti esperti"): col server acceso sul computer, "Sincronizza ora" allinea i due diari
+in automatico sulla rete di casa. Sul computer funziona subito (indirizzo precompilato).
 
 ### Nota per il sync WiFi dal telefono
 
